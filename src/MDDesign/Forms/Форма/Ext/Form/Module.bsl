@@ -750,19 +750,20 @@
 // Редактор передает события в 1С синтетическим щелчком, отправленным на window фрейма.
 // Тонкий клиент получает такие щелчки, веб-клиент слушает документ фрейма и их не видит:
 // в веб-клиенте щелчок с данными события пересылается на document.body.
+// Обработчик снимается и ставится заново при каждой загрузке страницы: если веб-клиент перезаписал документ
+// в том же окне фрейма, глобальные переменные окна сохраняются, а прежние обработчики событий — нет.
 &НаКлиенте
 Процедура ПодключитьПересылкуСобытийРедактора()
 	ТекстСкрипта =
-	"if (!window.__mdDesignRedispatch) {
-	|	window.__mdDesignRedispatch = true;
-	|	window.addEventListener('click', function (e) {
-	|		if (!e.eventData1C || e.__mdDesignRedispatched) { return; }
-	|		var copy = new MouseEvent('click', { bubbles: true });
-	|		copy.eventData1C = e.eventData1C;
-	|		copy.__mdDesignRedispatched = true;
-	|		document.body.dispatchEvent(copy);
-	|	});
-	|}";
+	"if (window.__mdDesignRedispatch) { window.removeEventListener('click', window.__mdDesignRedispatch); }
+	|window.__mdDesignRedispatch = function (e) {
+	|	if (!e.eventData1C || e.__mdDesignRedispatched) { return; }
+	|	var copy = new MouseEvent('click', { bubbles: true });
+	|	copy.eventData1C = e.eventData1C;
+	|	copy.__mdDesignRedispatched = true;
+	|	document.body.dispatchEvent(copy);
+	|};
+	|window.addEventListener('click', window.__mdDesignRedispatch);";
 	мКонтекстОкнаРедактораHTML.eval(ТекстСкрипта);
 КонецПроцедуры
 
